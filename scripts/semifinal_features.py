@@ -5,17 +5,19 @@ import seaborn as sns
 from sklearn.model_selection import KFold
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import NMF
+from sklearn.preprocessing import PolynomialFeatures
 from sklearn.preprocessing import StandardScaler
 
 
-def prepare_features(train, test):
+def prepare_features(train, test, scale=True):
     train, test = encode_str(train, test)
     data = pd.concat([train, test], sort=False)
     data = tfidf_desc(data)
     data.drop(['Vit_D_µg', 'Vit_A_RAE', 'Folate_Tot_(µg)'], axis=1, inplace=True)
     data = handle_floats(data)
+    data = polynomial_features(data)
     data = drop_excess(data)
-    train, test, scaler = split_back(data)
+    train, test, scaler = split_back(data, scale)
     return train, test, scaler
 
 
@@ -103,12 +105,29 @@ def drop_excess(data):
     return data
 
 
-def split_back(data):
+def split_back(data, scale):
     train = data[data['Energ_Kcal'] != -1]
     test = data[data['Energ_Kcal'] == -1]
     test.drop('Energ_Kcal', axis=1, inplace=True)
 
-    scaler = StandardScaler()
-    scaler.fit(train['Energ_Kcal'].values.reshape(-1, 1))
-    train['Energ_Kcal'] = scaler.transform(train['Energ_Kcal'].values.reshape(-1, 1))
+    if scale:
+        scaler = StandardScaler()
+        scaler.fit(train['Energ_Kcal'].values.reshape(-1, 1))
+        train['Energ_Kcal'] = scaler.transform(train['Energ_Kcal'].values.reshape(-1, 1))
+    else:
+        scaler = None
     return train, test, scaler
+
+
+def polynomial_features(data):
+    important = ['Water_(g)', 'Lipid_Tot_(g)', 'FA_Mono_(g)', 'FA_Sat_(g)', 'FA_Poly_(g)',
+                 'Carbohydrt_(g)', 'GmWt_1', 'Vit_E_(mg)', 'Sugar_Tot_(g)']
+    mapping = {'x' + str(i): important[i] for i in range(len(important))}
+    poly = PolynomialFeatures(include_bias=False)
+    the = poly.fit_transform(data[important])
+    feats = poly.get_feature_names()
+    for i in range(len(feats)):
+        for key, val in mapping.items():
+            feats[i] = feats[i].replace(key, val)
+    the = pd.DataFrame(the, columns=feats)
+    return pd.concat([data.reset_index(drop=True), the], axis=1, sort=False)
