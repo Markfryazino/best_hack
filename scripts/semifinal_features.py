@@ -21,6 +21,16 @@ def prepare_features(train, test, scale=True):
     return train, test, scaler
 
 
+def prepare_reduced_features(train, test, scale=True):
+    data = pd.concat([train, test], sort=False)
+    data = tfidf_desc(data)
+    data = handle_floats(data)
+    data = polynomial_features(data, True)
+    data.drop('Shrt_Desc', axis=1, inplace=True)
+    train, test, scaler = split_back(data, scale)
+    return train, test, scaler
+
+
 def handle_desc(x, param):
     if (x != x) and (param == 0):
         return np.NaN
@@ -119,9 +129,12 @@ def split_back(data, scale):
     return train, test, scaler
 
 
-def polynomial_features(data):
-    important = ['Water_(g)', 'Lipid_Tot_(g)', 'FA_Mono_(g)', 'FA_Sat_(g)', 'FA_Poly_(g)',
-                 'Carbohydrt_(g)', 'GmWt_1', 'Vit_E_(mg)', 'Sugar_Tot_(g)']
+def polynomial_features(data, use_subset=False):
+    if not use_subset:
+        important = ['Water_(g)', 'Lipid_Tot_(g)', 'FA_Mono_(g)', 'FA_Sat_(g)', 'FA_Poly_(g)',
+                     'Carbohydrt_(g)', 'GmWt_1', 'Vit_E_(mg)', 'Sugar_Tot_(g)']
+    else:
+        important = ['Lipid_Tot_(g)', 'Carbohydrt_(g)', 'Protein_(g)']
     mapping = {'x' + str(i): important[i] for i in range(len(important))}
     poly = PolynomialFeatures(include_bias=False)
     the = poly.fit_transform(data[important])

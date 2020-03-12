@@ -2,13 +2,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from xgboost import XGBRegressor
-from sklearn.svm import SVR
-from sklearn.neural_network import MLPRegressor
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.metrics import mean_absolute_error
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
+from xgboost import XGBRegressor, XGBClassifier
+from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
+from sklearn.metrics import mean_absolute_error, roc_auc_score
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.linear_model import LinearRegression, LogisticRegression
 
 
 def rescaled_mae(y_pred, y_true, scaler):
